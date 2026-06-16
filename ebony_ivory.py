@@ -8,7 +8,7 @@ logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import IP, TCP, UDP, ICMP, sr1
 
 # Dante's Arsenal Config 
-DEFAULT_TCP_PORTS = [21, 22, 23, 25, 53, 80, 88, 110, 139, 143, 443, 445, 389, 636, 3306, 3389, 5985] 
+DEFAULT_TCP_PORTS = [21, 22, 23, 25, 53, 80, 88, 110, 139, 143, 443, 445, 389, 636, 1433, 3306, 3389, 5985] 
 DEFAULT_UDP_PORTS = [53, 67, 68, 69, 123, 137, 138, 161, 514] 
 
 def ping_check(target_ip):
