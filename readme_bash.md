@@ -1,5 +1,6 @@
 # Ebony & Ivory: Dual-Protocol Scanner (Bash Edition)
-<img width="1376" height="768" alt="image" src="https://github.com/user-attachments/assets/d256f4bc-664b-48a9-83e0-2cafcac10057" />
+<img width="1376" height="768" alt="image" src="https://github.com/user-attachments/assets/c3738267-a3c4-42cf-9d9b-7fd739634cf4" />
+
 
 
 A lightweight Bash adaptation of the Ebony & Ivory network enumeration script. It relies entirely on native Bash terminal features (`/dev/tcp` and `/dev/udp`) and system utilities to map networks without requiring third-party libraries or root privileges.
