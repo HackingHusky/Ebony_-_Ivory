@@ -1,12 +1,13 @@
 # Ebony & Ivory: Dual-Protocol Scanner (Bash Edition)
-<img width="1376" height="768" alt="image" src="https://github.com/user-attachments/assets/28867172-64bb-45dd-a537-4de6f99ca242" />
+<img width="1376" height="768" alt="image" src="https://github.com/user-attachments/assets/d256f4bc-664b-48a9-83e0-2cafcac10057" />
 
 
-A lightweight Bash adaptation of the Ebony & Ivory network enumeration script. It relies entirely on native Bash terminal features (`/dev/tcp` and `/dev/udp`) to scan ports without requiring third-party libraries, Python environments, or root privileges.
+A lightweight Bash adaptation of the Ebony & Ivory network enumeration script. It relies entirely on native Bash terminal features (`/dev/tcp` and `/dev/udp`) and system utilities to map networks without requiring third-party libraries or root privileges.
 
 ## Features
 
-- **Zero Dependencies:** Operates without Python, Nmap, or Netcat. It uses built-in shell device redirection.
+- **Ping Verification & Sweep:** Automatically probes single hosts or systematically maps sequential IP ranges (`.1` to `.254`) using ICMP echo requests before initializing a scan.
+- **Zero Dependencies:** Operates natively without requiring Python, Nmap, or Netcat. It uses built-in shell device redirection.
 - **Ivory (TCP Scan):** Establishes standard TCP handshake connection attempts safely wrapped in a strict timeout ceiling.
 - **Ebony (UDP Scan):** Pipes empty system pulses to remote targets to verify protocol socket availability.
 - **No Sudo Required:** Can be safely executed from standard unprivileged user terminal prompts.
@@ -21,19 +22,24 @@ chmod +x ebony_ivory.sh
 
 ## Usage
 
-### Run Full Combo (Both Protocols)
+### Scan a Single Host (Verifies Host is Alive First)
 ```bash
-./ebony_ivory.sh -t <TARGET_IP>
+./ebony_ivory.sh -t 192.168.1.50
+```
+
+### Sweep a Whole Local Network (Uses 3-Octet Base Range)
+```bash
+./ebony_ivory.sh -t 192.168.1
 ```
 
 ### Run Ivory Only (TCP)
 ```bash
-./ebony_ivory.sh -t <TARGET_IP> -m ivory
+./ebony_ivory.sh -t 192.168.1.50 -m ivory
 ```
 
 ### Run Ebony Only (UDP)
 ```bash
-./ebony_ivory.sh -t <TARGET_IP> -m ebony
+./ebony_ivory.sh -t 192.168.1.50 -m ebony
 ```
 
 ## Protocol Limitations
@@ -41,3 +47,4 @@ chmod +x ebony_ivory.sh
 Because this uses basic shell-level socket interaction instead of raw packet injection:
 - **TCP Scans** perform a Full-Open handshake rather than a Stealth SYN scan. This will register in target server application logs.
 - **UDP Scans** cannot natively parse complex incoming raw ICMP destination-unreachable frames. All unresponsive UDP ports return as `OPEN | FILTERED`.
+
