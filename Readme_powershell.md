@@ -17,6 +17,8 @@ A lightweight PowerShell adaptation of the Ebony & Ivory network enumeration too
 Before executing external scripts, your local terminal session may require execution clearance:
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+
 ```
 
 ## Usage
