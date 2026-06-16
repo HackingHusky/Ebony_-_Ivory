@@ -1,4 +1,6 @@
 # Ebony & Ivory: Dual-Protocol Scanner (PowerShell Edition)
+<img width="1376" height="768" alt="image" src="https://github.com/user-attachments/assets/c1b2edb6-cadd-4eaf-9abb-a730008441fc" />
+
 
 A lightweight PowerShell adaptation of the Ebony & Ivory network enumeration toolkit. It leverages native `.NET` framework network namespaces (`System.Net.Sockets`) to systematically discover hosts and scan target environments without external tools or elevated administrative privileges.
 
