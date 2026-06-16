@@ -18,6 +18,8 @@ Before executing external scripts, your local terminal session may require execu
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+New-NetFirewallRule -DisplayName "Allow Inbound ICMPv4" -Direction Inbound -Protocol ICMPv4 -IcmpType 8 -Action Allow
+
 
 ```
 
