@@ -53,11 +53,21 @@ if [[ "$TARGET" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             TARGET_HOSTS+=("${TARGET}.${i}")
         fi
     done
+    
     if [ ${#TARGET_HOSTS[@]} -eq 0 ]; then
-        echo "[-] No live hosts found during the ping sweep. Exiting."
-        exit 0
+        echo "[-] No live hosts responded to the ping sweep."
+        read -p "[?] Hosts might be firewalled. Force blind scan against entire range? (y/n): " range_choice
+        if [[ "$range_choice" =~ ^[Yy]$ ]]; then
+            echo "[*] Initializing full sweep. This may take longer due to firewall drops..."
+            for i in {1..254}; do
+                TARGET_HOSTS+=("${TARGET}.${i}")
+            done
+        else
+            echo "[-] Skipping execution."
+            exit 0
+        fi
     fi
-    echo -e "\n[*] Proceeding to enumerate ${#TARGET_HOSTS[@]} live target(s)..."
+    echo -e "\n[*] Proceeding to enumerate ${#TARGET_HOSTS[@]} target(s)..."
 else
     # Verify the individual target host answers to a ping check first
     echo "[*] Verifying host availability via ping: $TARGET"
@@ -65,8 +75,15 @@ else
         echo "   [+] Host is up!"
         TARGET_HOSTS+=("$TARGET")
     else
-        echo "[-] Target host did not respond to ping. Skipping execution."
-        exit 0
+        echo "   [!] Target host did not respond to ping."
+        read -p "   [?] Host might be firewalled. Force port scan anyway? (y/n): " host_choice
+        if [[ "$host_choice" =~ ^[Yy]$ ]]; then
+            echo "   [*] Bypassing ping check. Initializing scan..."
+            TARGET_HOSTS+=("$TARGET")
+        else
+            echo "[-] Skipping execution."
+            exit 0
+        fi
     fi
 fi
 
