@@ -14,6 +14,9 @@ The script utilizes raw network sockets to craft custom packet headers. Because 
 
 Install Scapy via pip:
 ```bash
+sudo apt install python3-venc
+python3 -m venv my-env
+source my-env/bin/activate
 pip install scapy
 ```
 
