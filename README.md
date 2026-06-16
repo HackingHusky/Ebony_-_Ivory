@@ -1,6 +1,6 @@
 # Ebony & Ivory: Dual-Protocol Scanner
 
-A custom Python script utilizing the Scapy library to conduct low-level network enumeration via TCP and UDP. Inspired by Dante's signature pistols, **Ivory** handles rapid TCP SYN scans, while **Ebony** investigates connectionless UDP ports using ICMP error behavior.
+A custom Python script utilizing the Scapy library to conduct low-level network enumeration via TCP and UDP. Inspired by Dante's signature pistols, **Ivory** handles rapid TCP SYN scans, while **Ebony** investigates connectionless UDP ports using ICMP error behavior. Based off Devil May Cry Ebony & Ivory guns. 
 
 ## Features
 
