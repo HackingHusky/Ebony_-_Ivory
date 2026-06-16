@@ -12,28 +12,34 @@ DEFAULT_TCP_PORTS = [21, 22, 23, 25, 53, 80, 88, 110, 139, 143, 443, 445, 389, 6
 DEFAULT_UDP_PORTS = [53, 67, 68, 69, 123, 137, 138, 161, 514] 
 
 def ping_check(target_ip):
-    """Sends a fast ICMP Echo Request to see if a single host is alive"""
+    """Sends an ICMP Echo Request, falling back to a TCP SYN check if firewalled"""
+    # Try traditional ICMP Ping first
     ping_packet = IP(dst=target_ip) / ICMP()
-    response = sr1(ping_packet, timeout=1.0, verbose=False)
+    response = sr1(ping_packet, timeout=0.8, verbose=False)
     if response is not None:
         return True
+        
+    # Fallback: Fire TCP SYN packets to common web/admin ports to bypass ICMP blocks
+    # If the firewall allows these ports or the OS rejects the connection, it reveals the host is alive
+    fallback_ports = [443, 80, 3389]
+    for port in fallback_ports:
+        tcp_ping = IP(dst=target_ip) / TCP(dport=port, flags="S")
+        tcp_response = sr1(tcp_ping, timeout=0.5, verbose=False)
+        
+        # Receiving ANY TCP response (SYN-ACK or RST) proves the host is live
+        if tcp_response and tcp_response.haslayer(TCP):
+            return True
+            
     return False
 
 def ping_sweep(subnet):
-    """Sweeps an entire CIDR network range for active hosts using ICMP"""
-    print(f"[*] Commencing Ping Sweep on network range: {subnet}")
-    
-    # Scapy expands CIDR notations automatically when passed to IP(dst=...)
-    ping_packet = IP(dst=subnet) / ICMP()
-    
-    # sr1 only handles one packet. We use a looping sweep method for cleaner targeting.
-    # To keep it quick and native, we parse the range manually or rely on Scapy's list expansion.
+    """Sweeps an entire CIDR network range for active hosts using smart detection"""
+    print(f"[*] Commencing Host Sweep on network range: {subnet}")
     from scapy.utils import Net
     live_hosts = []
     
     try:
         for ip in Net(subnet):
-            # Check host responsiveness
             if ping_check(str(ip)):
                 print(f"   [+] Host Detected: {ip}")
                 live_hosts.append(str(ip))
@@ -44,41 +50,30 @@ def ping_sweep(subnet):
 
 def ivory_tcp_scan(target, port): 
     """Ivory: TCP SYN 'Half-Open' Scan""" 
-    # Craft a TCP SYN packet targeting our specific port 
     syn_packet = IP(dst=target) / TCP(dport=port, flags="S") 
-    
-    # Send packet and wait for a single response (1-second timeout to keep it fast) 
     response = sr1(syn_packet, timeout=1.0, verbose=False) 
     
     if response: 
-        # Check if the target returned a TCP layer 
         if response.haslayer(TCP): 
             flags = response.getlayer(TCP).flags 
-            if flags == 0x12: # 0x12 is the hex value for SYN-ACK (Open) 
-                # Send a RST packet immediately to close the half-open connection cleanly 
+            if flags == 0x12: # SYN-ACK (Open) 
                 rst_packet = IP(dst=target) / TCP(dport=port, flags="R") 
                 sr1(rst_packet, timeout=0.5, verbose=False) 
                 return "OPEN" 
-            elif flags == 0x14: # 0x14 is the hex value for RST-ACK (Closed) 
+            elif flags == 0x14: # RST-ACK (Closed) 
                 return "CLOSED" 
     return "FILTERED/NO RESPONSE" 
 
 def ebony_udp_scan(target, port): 
     """Ebony: UDP Port Unreachable Scan""" 
-    # Craft a standard UDP packet targeting the port 
     udp_packet = IP(dst=target) / UDP(dport=port) 
-    
-    # Fire and listen for a response 
     response = sr1(udp_packet, timeout=2.0, verbose=False) 
     
     if response is None: 
-        # Connectionless protocols don't acknowledge received data if open 
         return "OPEN | FILTERED (No response)" 
     elif response.haslayer(UDP): 
-        # Target actually spoke back in UDP! Port is definitely open 
         return "OPEN" 
     elif response.haslayer(ICMP): 
-        # Extract ICMP type and code numbers 
         icmp_type = response.getlayer(ICMP).type 
         icmp_code = response.getlayer(ICMP).code 
         if int(icmp_type) == 3 and int(icmp_code) == 3: 
@@ -86,7 +81,6 @@ def ebony_udp_scan(target, port):
     return "UNKNOWN" 
 
 def main(): 
-    # Devil May Cry Easter Egg Banner 
     print(""" 
     ================================================== 
         EBONY & IVORY: Dual-Protocol Scanner 
@@ -95,37 +89,33 @@ def main():
     """) 
     
     parser = argparse.ArgumentParser(description="Ebony & Ivory: Custom TCP/UDP Scapy Enumerator") 
-    parser.add_argument("-t", "--target", required=True, help="Target IP address (e.g., 192.168.1.50) or Subnet range (e.g., 192.168.1.0/24)") 
+    parser.add_argument("-t", "--target", required=True, help="Target IP address or Subnet range (e.g., 192.168.1.0/24)") 
     parser.add_argument("--mode", choices=["ivory", "ebony", "both"], default="both", help="ivory=TCP Only, ebony=UDP Only, both=Full Combo") 
     args = parser.parse_args() 
     
     target_input = args.target
     target_hosts = []
 
-    # Detect if the target input is a CIDR network block
     if "/" in target_input:
         target_hosts = ping_sweep(target_input)
         if not target_hosts:
-            print("[-] No live hosts found during the ping sweep. Exiting.")
+            print("[-] No live hosts answered the ICMP or TCP discovery probes. Exiting.")
             sys.exit(0)
         print(f"\n[*] Proceeding to enumerate {len(target_hosts)} live target(s)...")
     else:
-        # Check single host availability first
-        print(f"[*] Verifying host availability via ping: {target_input}")
+        print(f"[*] Verifying host availability: {target_input}")
         if ping_check(target_input):
             print("   [+] Host is up!")
             target_hosts.append(target_input)
         else:
-            print("[-] Target host did not respond to ping. Skipping execution.")
+            print("[-] Target host did not respond to ICMP or TCP probes. Skipping execution.")
             sys.exit(0)
 
-    # Process all discovered live targets
     for target in target_hosts:
         print(f"\n--------------------------------------------")
         print(f"Target Focus: {target}")
         print(f"--------------------------------------------")
 
-        # Triggering Ivory 
         if args.mode in ["ivory", "both"]: 
             print(f"[Ivory] Firing TCP SYN shots...") 
             for port in DEFAULT_TCP_PORTS: 
@@ -133,7 +123,6 @@ def main():
                 if result == "OPEN": 
                     print(f"   [+] TCP Port {port:<5} OPEN") 
                     
-        # Triggering Ebony 
         if args.mode in ["ebony", "both"]: 
             print(f"\n[Ebony] Firing UDP probe shots...") 
             for port in DEFAULT_UDP_PORTS: 
@@ -144,7 +133,6 @@ def main():
     print("\n[*] Jackpot! Scan sequence completed successfully.") 
 
 if __name__ == "__main__": 
-    # Scapy needs raw socket generation privileges, so enforce root execution check 
     import os 
     if os.geteuid() != 0: 
         print("[-] Error: Ebony & Ivory require Smokin' Sexy Style privileges! Run with sudo.") 
